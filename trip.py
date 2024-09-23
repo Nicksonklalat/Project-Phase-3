@@ -1,13 +1,15 @@
 import psycopg2
 
 # Database connection parameters
-DB_HOST = "localhost"
-DB_NAME = "tripcar"
-DB_USER = "postgres"
-DB_PASSWORD = "pass"
+DB_CONFIG = {
+    "host": "localhost",
+    "dbname": "tripcar",
+    "user": "postgres",
+    "password": "pass"
+}
 
 def create_tables():
-    conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+    conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -42,13 +44,13 @@ def create_tables():
     cursor.close()
     conn.close()
 
-def register_user(name, id_no, phone_number):
-    conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+def register_user(user_info):
+    conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
     
     cursor.execute("""
     INSERT INTO users (name, id_no, phone_number) VALUES (%s, %s, %s) RETURNING user_id;
-    """, (name, id_no, phone_number))
+    """, (user_info["name"], user_info["id_no"], user_info["phone_number"]))
     
     user_id = cursor.fetchone()[0]
     conn.commit()
@@ -57,13 +59,13 @@ def register_user(name, id_no, phone_number):
     
     return user_id
 
-def add_trip(start_location, end_location, trip_date):
-    conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+def add_trip(trip_info):
+    conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
     
     cursor.execute("""
     INSERT INTO trip_details (start_location, end_location, trip_date) VALUES (%s, %s, %s) RETURNING trip_id;
-    """, (start_location, end_location, trip_date))
+    """, (trip_info["start_location"], trip_info["end_location"], trip_info["trip_date"]))
     
     trip_id = cursor.fetchone()[0]
     conn.commit()
@@ -73,10 +75,10 @@ def add_trip(start_location, end_location, trip_date):
     return trip_id
 
 def book_trip(user_id, trip_id, total_passengers):
-    conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+    conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
 
-    price = total_passengers * 40.0  # Changed price calculation to multiply by 40
+    price = total_passengers * 40.0
     
     cursor.execute("""
     INSERT INTO bookings (total_passengers, price, user_id, trip_id) VALUES (%s, %s, %s, %s) RETURNING booking_id;
@@ -90,7 +92,7 @@ def book_trip(user_id, trip_id, total_passengers):
     return booking_id
 
 def view_bookings(user_id):
-    conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+    conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -107,7 +109,7 @@ def view_bookings(user_id):
     return bookings
 
 def view_booking_details(booking_id):
-    conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+    conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -126,7 +128,7 @@ def view_booking_details(booking_id):
     return booking_details
 
 def delete_booking(booking_id):
-    conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+    conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -140,7 +142,7 @@ def delete_booking(booking_id):
 def main():
     create_tables()
     
-    print("Welcome to the Car Trip Booking System!")
+    print("Welcome to the Car Trip Booking!")
     
     while True:
         print("\nMenu:")
@@ -155,18 +157,21 @@ def main():
         choice = input("Please choose an option (1-7): ")
         
         if choice == '1':
-            name = input("Enter your name: ")
-            id_no = input("Enter your ID number: ")
-            phone_number = input("Enter your phone number: ")
-            user_id = register_user(name, id_no, phone_number)
+            user_info = {
+                "name": input("Enter your name: "),
+                "id_no": input("Enter your ID number: "),
+                "phone_number": input("Enter your phone number: ")
+            }
+            user_id = register_user(user_info)
             print(f"Registration successful! Your User ID is: {user_id}")
         
         elif choice == '2':
-            print("Please enter trip details:")
-            start_location = input("Start Location: ")
-            end_location = input("End Location: ")
-            trip_date = input("Trip Date (YYYY-MM-DD): ")
-            trip_id = add_trip(start_location, end_location, trip_date)
+            trip_info = {
+                "start_location": input("Start Location: "),
+                "end_location": input("End Location: "),
+                "trip_date": input("Trip Date (YYYY-MM-DD): ")
+            }
+            trip_id = add_trip(trip_info)
             print(f"Trip added successfully! Trip ID is: {trip_id}")
         
         elif choice == '3':
@@ -207,7 +212,7 @@ def main():
             print(f"Booking ID {booking_id} deleted successfully.")
 
         elif choice == '7':
-            print("Thank you for using the Car Trip Booking System. WELCOME!")
+            print("Thank you for using the Car Trip Booking. WELCOME!")
             break
         
         else:
